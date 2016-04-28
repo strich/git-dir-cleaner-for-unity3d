@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Command line options:
+isSquashMerge="$1"
+
+dirsRemovedCounter=0
+
+echo "Removing empty directories..."
+
+# Grab a list of deleted files:
+changedFiles="$(git diff-tree -r --name-only --diff-filter=D --no-commit-id ORIG_HEAD HEAD)"
+
+# Early exit if there are no removed files at all:
+if [ -z "$changedFiles" ]; then
+	exit 0
+fi
+
+# Get the list of dir paths and then sort and remove dupes: 
+dirsToCheck="$(echo "$changedFiles" | xargs -d '\n' dirname | sort -u)"
+
+# For each dir check if its empty and if so, remove it:
+for dir in $dirsToCheck; do
+	if [ ! -d "$dir" ]; then
+		continue
+	fi
+
+	((dirsRemovedCounter++))
+
+	find "$dir" -type d -empty -delete
+done
+
+echo "Removed" $dirsRemovedCounter "directories."
